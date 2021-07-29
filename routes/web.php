@@ -37,4 +37,9 @@ $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($route
     $router->post('filter', 'UserController@filter');
     $router->get('filter', 'UserController@filter');
     $router->post('createUser', 'UserController@createUser');
+    $router->put('update', 'UserController@update');
+    $router->post('createJob', 'JobController@createJob');
+    $router->put('updateJob', 'JobController@updateJob');
+    $router->put('updateStatus', 'JobController@updateStatus');
+    $router->get('viewTasks', 'JobController@viewTasks');
 });

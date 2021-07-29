@@ -105,7 +105,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Account deleted by '.($user->deletedBy)], 401);
         }
         if(!$user->verified){
-            return response()->json(['message'=>'Email not Verified']);
+            return response()->json(['message'=>'Email not Verified'],401);
         }
         $forgotpass = ForgotPassword::firstornew(['user_id'=> $user->id]);
         $forgotpass->token = $this->generateToken(16);
@@ -125,12 +125,24 @@ class AuthController extends Controller
     }
     public function resetPassword(Request $request){
         // check if token is expired
+
         $this->validate($request, [
             'token' => 'required|string',
             'password' => 'required|confirmed|min:6',//strong pasword
         ]);
         $token = $request->input('token');
         $verify = ForgotPassword::where('token',$token)->first();
+        //check if token is expired
+            // $date = $user->created_at->toDateTimeString();
+            // return  date('Y-m-d H:i:s') , date('Y-m-d H:i:s',strtotime('+3 hours'));
+        $created = $verify->updated_at->toDateTimeString();
+        $now = date('Y-m-d H:i:s',strtotime('-8 hours'));
+        echo $created;
+        echo $now;
+        if ($now>$created){
+            return response()->json(['message'=>'Token expired']);
+        }
+
         if($verify){
             $user = User::find($verify->user_id);
             // return $user;

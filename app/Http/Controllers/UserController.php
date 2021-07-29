@@ -33,7 +33,7 @@ class UserController extends Controller
                 ->where('deleted', false)
                 ->get();
         }
-        return response()->json([$users]);
+        return response()->json($users);
 
     }
     public function delSelf(Request $request){
@@ -100,17 +100,15 @@ class UserController extends Controller
         return response()->json(['message'=>'Not authorised']);
     }
 /////what to do if we want to re create a deleted account
-//can i delete the prevoius account from db?
+/////can i delete the prevoius account from db
 
     public function filter(Request $request){//edit
         $admin = auth()->user();
         $column = $request->input('column');
         $string = $request->input('string');
-        //take the input for what column i want to filter by
-        //string to filter
         if ($admin->role == 'admin'){
             if ($column == 'name' || $column == 'email'){
-                $users = User::select('name','email','role')
+                $users = User::select('id','name','email','role')
                 ->where($column, 'LIKE', '%'.$string.'%')
                 ->where('verified', true)
                 ->where('deleted', false)
@@ -125,43 +123,6 @@ class UserController extends Controller
                 ->get();
                 return $users;
             }
-            if($column == 'deleted'){
-                $users = User::select('name','email')
-                ->where('verified', true)
-                ->where('deleted', true)
-                ->get();
-                return $users;
-            }
-            if($column == 'verified'){
-                $users = User::select('name','email','role','deleted')
-                ->where('verified', true)
-                ->get();
-                return $users;
-            }
-            if($column == 'date'){
-                $users = User::select('name','email','role')
-                ->whereDate('created_at', '=', $string)
-                ->where('verified', true)
-                ->where('deleted', false)
-                ->get();
-                return $users;
-            }
-            if($column == 'createdBy'){
-                $users = User::select('name','email','role')
-                ->where('createdBy', $string)
-                ->where('verified', true)
-                ->where('deleted', false)
-                ->get();
-                return $users;
-            }
-            if($column == 'deletedBy'){
-                $users = User::select('name','email','role')
-                ->where('deletedBy', $string)
-                ->where('verified', true)
-                ->where('deleted', true)
-                ->get();
-                return $users;
-            }
             if($column == 'id'){
                 return $admin;
                 $users = User::select('name','email','role')
@@ -169,9 +130,35 @@ class UserController extends Controller
                 ->get();
                 return $users;
             }
-            
         }
         return response()->json(['message'=>'Not allowed']);
     }
 
+    public function update(request $request){
+        $admin = auth()->user();
+        if ($admin->role == 'admin'){
+            $this->validate($request, [
+                'id' => 'required'
+            ]);
+            $user = User::where('id',$request->input('id'))->first();
+
+            if ($request->input('name')){
+                $user->name = $request->input('name');
+            }
+            if ($request->input('email')){
+                $user->name = $request->input('email');
+            }
+            if ($request->input('verified')!== NULL){
+                $user->verified = $request->input('verified');
+            }if ($request->input('deleted')!== NULL){
+                $user->deleted = $request->input('deleted');
+            }
+            if ($request->input('role')){
+                $user->role = $request->input('role');
+            }
+            $user->save();
+            return response()->json(['user' => $user, 'message' => 'Updated user!'], 201);
+        }
+        return response()->json(['message'=>'Not authorised']);
+    }
 }
