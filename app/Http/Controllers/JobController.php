@@ -120,7 +120,7 @@ class JobController extends Controller
         $user = auth()->user();
         if($user->role == 'admin'){
             //get all
-            $jods = Job::select('title','description','assignee','creator','duedate')
+            $jobs = Job::select('title','description','assignee','creator','duedate')
                 // ->where('status',!=,'deleted')
                 ->get();
             return $jobs;
