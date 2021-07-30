@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 use  App\Models\Job;
 
-use  App\Models\Status;
+// use  App\Models\Status;
 //how to show status
 class JobController extends Controller
 {
@@ -23,10 +23,11 @@ class JobController extends Controller
             'title' => 'required|string',
         ]);
         $job = new Job;
-        $job->title = $request->input('title');
+        $job->title = $request->input('title');//////title unique?
         $job->description = $request->input('description');
         $job->duedate = $request->input('duedate');//findout how to give dateTime type
         $job->assignee = $request->input('assignee');//update status if there is assignee
+        // $job->status = NULL;
         if($request->input('assignee')){
             $id = $request->input('assignee');
             $user = User::where('id',$id)->first();
@@ -39,18 +40,13 @@ class JobController extends Controller
             if($user->deleted){
                 return response()->json(['message'=> 'Assignee deleted by '.($user->deletedBy)]);
             }
+            $job->status = 'assigned';
         }
         $job->creator = $creator->id;
         $job->save();
 
-        $status = new Status;
-        $status->job_id = $job->id;
-        if ($job->assignee){
-            $status->assigned = 1;
-        }
-        $status->save();
         // get mail id of assignee if exists and send mail 
-        return response()->json(['job'=> $job,'status'=>$status]);
+        return response()->json(['job'=> $job]);
     }
     public function updateJob(Request $request){
         $creator = auth()->user();
@@ -89,10 +85,10 @@ class JobController extends Controller
             }
         
             $job->assignee = $request->input('assignee');///////////update status
-            $status = Status::where('job_id',$id)->first();
-            $status->assigned = true;
-            $status->save();
-            
+            $job->status = 'assigned';
+        }
+        if ($request->input('status')){
+            $job->status = $request->input('status');
         }
         //findout how to give dateTime type
         //update status if there is assignee
@@ -101,69 +97,43 @@ class JobController extends Controller
         // get mail id of assignee if exists and send mail 
         return response()->json(['message'=> $job]);
     }
-    public function updateStatus(Request $request){
-        $this->validate($request, [
-            'id' => 'required',
-        ]);
-        $assignee = auth()->user();
-        $status = Status::where('job_id',$request->input('id'))->first();
-        $job = Job::where('id',$request->input('id'))->first();
-        if (!$status){
-            return response()->json(['message'=> 'No job with this id exists']);
-        }
-        if (!$job){
-            return response()->json(['message'=> 'No job with this id exists']);
-        }
-        if (!$status->assigned){
-            return response()->json(['message'=> 'Job not assigned']);
-        }
-        if ($assignee->id != $job->assignee){
-            return response()->json(['message'=> 'Not authorised to change status']);
-        }
+    public function updateStatus(Request $request){//dont need this function
+        // $this->validate($request, [
+        //     'id' => 'required',
+        // ]);
+        // $assignee = auth()->user();
+        // $job = Job::where('id',$request->input('id'))->first();
+        // if (!$job){
+        //     return response()->json(['message'=> 'No job with this id exists']);
+        // }
+        // if ($assignee->id != $job->assignee){
+        //     return response()->json(['message'=> 'Not authorised to change status']);
+        // }
+        // if(!($request->input('status')===NULL )){
+        //     $job->status = $request->input('status');
+        // }
+        
 
-        if(!($request->input('inprogress')===NULL )){
-            if($request->input('inprogress')=='false'){
-                $status->inprogress = 0;
-            }
-            else{
-                $status->inprogress = 1;
-            }
-        }
-        if(!($request->input('completed')===NULL )){//can check with current date and due date
-            if($request->input('completed')=='false'){
-                $status->completed = 0;
-            }
-            else{
-                $status->completed = 1;
-            }
-        }
-        if(!($request->input('deleted')===NULL )){
-            if($request->input('deleted')=='false'){
-                $status->deleted = 0;
-            }
-            else{
-                $status->deleted = 1;
-            }
-        }
-
-        return response()->json(['job'=> $job,'status'=>$status]);
+        // return response()->json(['job'=> $job]);
     }
     public function viewTasks(Request $request){
         $user = auth()->user();
         if($user->role == 'admin'){
             //get all
-            $users = Job::select('title','description','assignee','creator','duedate')
-                // ->with(['status'])
+            $jods = Job::select('title','description','assignee','creator','duedate')
+                // ->where('status',!=,'deleted')
                 ->get();
-            return $users;
+            return $jobs;
         }
         else{
             //creator
             $jobCreator = Job::select('title','description','assignee','creator','duedate')
                 ->where('creator', $user->id)
+                // ->where('status',!=, 'deleted')
                 ->get();
             $jobAssignee = Job::select('title','description','assignee','creator','duedate')
                 ->where('assignee', $user->id)
+                // ->where('status',!=, 'deleted')
                 ->get();
             return response()->json([$jobCreator,$jobAssignee]);
         }

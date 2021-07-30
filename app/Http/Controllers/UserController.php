@@ -116,7 +116,7 @@ class UserController extends Controller
                 return $users;
             }
             if($column == 'role'){
-                $users = User::select('name','email')
+                $users = User::select('id','name','email','role')
                 ->where('role', $string)
                 ->where('verified', true)
                 ->where('deleted', false)

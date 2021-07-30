@@ -20,7 +20,7 @@ class CreateJobsTable extends Migration
             $table->dateTime('duedate')->nullable();
             $table->unsignedBigInteger('assignee')->nullable();
             $table->unsignedBigInteger('creator');
-            // $table->string('status');
+            $table->string('status')->nullable();
             $table->timestamps();
         });
     }
