@@ -137,8 +137,8 @@ class AuthController extends Controller
             // return  date('Y-m-d H:i:s') , date('Y-m-d H:i:s',strtotime('+3 hours'));
         $created = $verify->updated_at->toDateTimeString();
         $now = date('Y-m-d H:i:s',strtotime('-8 hours'));
-        echo $created;
-        echo $now;
+        // echo $created;
+        // echo $now;
         if ($now>$created){
             return response()->json(['message'=>'Token expired']);
         }

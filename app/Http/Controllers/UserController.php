@@ -65,12 +65,12 @@ class UserController extends Controller
     public function createUser(Request $request){
         $admin = auth()->user();
         if ($admin->role == 'admin'){
-
+            dump(1);
             $this->validate($request, [
                 'name' => 'required|string',
                 'email' => 'required|email|unique:users',
-                // 'password' => 'required|confirmed',
             ]);
+            dump(2);
             
             $user = new User;
             $user->name = $request->input('name');

@@ -41,8 +41,10 @@ class JobController extends Controller
                 return response()->json(['message'=> 'Assignee deleted by '.($user->deletedBy)]);
             }
             $job->status = 'assigned';
+            $job->assigneeName = $user->name;
         }
         $job->creator = $creator->id;
+        $job->assignerName = $creator->name;
         $job->save();
 
         // get mail id of assignee if exists and send mail 
@@ -87,7 +89,7 @@ class JobController extends Controller
             $job->assignee = $request->input('assignee');///////////update status
             $job->status = 'assigned';
         }
-        if ($request->input('status')){
+        if ($request->input('status')){///should i make another assign job function
             $job->status = $request->input('status');
         }
         //findout how to give dateTime type
@@ -97,45 +99,72 @@ class JobController extends Controller
         // get mail id of assignee if exists and send mail 
         return response()->json(['message'=> $job]);
     }
-    public function updateStatus(Request $request){//dont need this function
-        // $this->validate($request, [
-        //     'id' => 'required',
-        // ]);
-        // $assignee = auth()->user();
-        // $job = Job::where('id',$request->input('id'))->first();
-        // if (!$job){
-        //     return response()->json(['message'=> 'No job with this id exists']);
-        // }
-        // if ($assignee->id != $job->assignee){
-        //     return response()->json(['message'=> 'Not authorised to change status']);
-        // }
-        // if(!($request->input('status')===NULL )){
-        //     $job->status = $request->input('status');
-        // }
-        
-
-        // return response()->json(['job'=> $job]);
+    public function updateStatus(Request $request){//dont need this function  
     }
-    public function viewTasks(Request $request){
+    public function deleteJob(Request $request){
+        $assignee = auth()->user();
+
+        $this->validate($request, [
+            'id' => 'required',
+        ]);
+        $job = Job::where('id',$request->input('id'))->first();
+        if (!$job){
+            return response()->json(['message'=> 'No job with this id exists']);
+        }
+        if($job->assignee != $assignee->id){//only assignee can update status
+            return response()->json(['message'=>'Not authorised to update status']);
+        }
+        $job->status = 'deleted';
+        $job->save();
+        return response()->json(['message'=>'Successfully deleted task']);
+    }
+    public function viewJobs(Request $request){
         $user = auth()->user();
         if($user->role == 'admin'){
             //get all
-            $jobs = Job::select('title','description','assignee','creator','duedate')
-                // ->where('status',!=,'deleted')
+            $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName')
+                ->where('status','!=','deleted')
+                ->orderBy('duedate','asc')
                 ->get();
             return $jobs;
         }
         else{
             //creator
-            $jobCreator = Job::select('title','description','assignee','creator','duedate')
+            $jobCreator = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName')
                 ->where('creator', $user->id)
-                // ->where('status',!=, 'deleted')
+                ->orderBy('duedate','asc')
+                ->where('status','!=', 'deleted')
                 ->get();
-            $jobAssignee = Job::select('title','description','assignee','creator','duedate')
+            $jobAssignee = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName')
                 ->where('assignee', $user->id)
-                // ->where('status',!=, 'deleted')
+                ->orderBy('duedate','asc')
+                ->where('status','!=', 'deleted')
                 ->get();
             return response()->json([$jobCreator,$jobAssignee]);
         }
+    }
+    public function filterJobs(Request $request){//edit
+        $admin = auth()->user();
+        $column = $request->input('column');
+        $string = $request->input('string');
+        if ($admin->role == 'admin'){
+            if ($column == 'assigner'){
+                $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName',)
+                ->where('creator', $string )
+                ->where('status','!=', 'deleted')
+                ->orderBy('duedate','asc')
+                ->get();
+                return $jobs;
+            }
+            if ($column == 'assignee'){
+                $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName',)
+                ->where('assignee', $string)
+                ->where('status','!=', 'deleted')
+                ->orderBy('duedate','asc')
+                ->get();
+                return $jobs;
+            }
+        }
+        return response()->json(['message'=>'Not allowed']);
     }
 }

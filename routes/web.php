@@ -33,6 +33,7 @@ $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($route
     $router->get('delSelf', 'UserController@delSelf');
     $router->delete('delUser', 'UserController@delUser');
     $router->post('createUser', 'UserController@createUser');
+    $router->get('createUser', 'UserController@createUser');
 
     $router->post('filter', 'UserController@filter');
     $router->get('filter', 'UserController@filter');
@@ -41,5 +42,10 @@ $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($route
     $router->post('createJob', 'JobController@createJob');
     $router->put('updateJob', 'JobController@updateJob');
     $router->put('updateStatus', 'JobController@updateStatus');
-    $router->get('viewTasks', 'JobController@viewTasks');
+    $router->get('viewJobs', 'JobController@viewJobs');
+    $router->delete('deleteJob','JobController@deleteJob');
+
+    $router->post('filterJobs', 'JobController@filterJobs');
+    $router->get('filterJobs', 'JobController@filterJobs');
+
 });
