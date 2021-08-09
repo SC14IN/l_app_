@@ -75,7 +75,7 @@ class AuthController extends Controller
 
         $user = User::where('email',$credentials['email'])->first();
         if(!$user){
-            return response()->json(['message'=>'Email not registered']);
+            return response()->json(['message'=>'Email not registered'],401);
         }
         if($user->deleted){
             return response()->json(['message' => 'account deleted by '.($user->deletedBy)], 401);
@@ -85,10 +85,11 @@ class AuthController extends Controller
         }
 
         $token = Auth::attempt($credentials);
+        $id = $user->id;
         if (! $token) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
-        return $this->respondWithToken($token);
+        return $this->respondWithToken($token,$id);
         // return response()->json(['time'=>$user->updated_at,'php_time'=>getdate()]);
     }
     public function forgotPassword(Request $request){

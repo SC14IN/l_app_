@@ -63,15 +63,13 @@ class UserController extends Controller
         return response()->json(['message'=>'Not authorised']);
     }
     public function createUser(Request $request){
+        // return response()->json(['string'=>'success'],200);
         $admin = auth()->user();
         if ($admin->role == 'admin'){
-            dump(1);
             $this->validate($request, [
                 'name' => 'required|string',
                 'email' => 'required|email|unique:users',
             ]);
-            dump(2);
-            
             $user = new User;
             $user->name = $request->input('name');
             $user->email = $request->input('email');
@@ -104,34 +102,31 @@ class UserController extends Controller
 
     public function filter(Request $request){//edit
         $admin = auth()->user();
-        $column = $request->input('column');
-        $string = $request->input('string');
+        
+        global $string ;
+        $string= $request->input('string');
+        // echo($string);
         if ($admin->role == 'admin'){
-            if ($column == 'name' || $column == 'email'){
-                $users = User::select('id','name','email','role')
-                ->where($column, 'LIKE', '%'.$string.'%')
+            $users = User::select('id','name','email','role')
                 ->where('verified', true)
                 ->where('deleted', false)
+                ->where(function ($query) {
+                    global $string;
+                    $query->where('name', 'LIKE', '%'.$string.'%')
+                            ->orWhere('email', 'LIKE', '%'.$string.'%');
+                })
                 ->get();
-                return $users;
-            }
-            if($column == 'role'){
-                $users = User::select('id','name','email','role')
-                ->where('role', $string)
-                ->where('verified', true)
-                ->where('deleted', false)
-                ->get();
-                return $users;
-            }
-            if($column == 'id'){
-                return $admin;
-                $users = User::select('name','email','role')
-                ->where('id', $string)
-                ->get();
-                return $users;
-            }
+                // $users = User::select('id','name','email','role')
+                // ->where('name', 'LIKE', '%'.$string.'%')
+                // ->where('email', 'LIKE', '%'.$string.'%')
+                // ->where('verified', true)
+                // ->where('deleted', false)
+                
+            return $users;
         }
-        return response()->json(['message'=>'Not allowed']);
+        else{
+            return response()->json(['message'=>'Not allowed']);
+        }
     }
 
     public function update(request $request){
