@@ -248,13 +248,22 @@ class JobController extends Controller
             return response()->json(['message'=>'Not allowed']);
         }
     }
-    public function getValues(Request $request){
-        $string = auth()->user()->id;
+    public function getValues(Request $request){//only admin can see overview
+        
+        // echo $string;
+        if (($request->input('id')=='undefined')||($request->input('id')==NULL)||$request->input('id')=='null'){
+            $string = auth()->user()->id;
+            
+        }
+        else{
+            $string = $request->input('id');
+        }
         // echo $string;
         $overdue =  Job::select('id')
                 ->where('assignee', $string)
                 ->where('duedate','<',date('Y-m-d H:i:s'))
                 ->where('status','!=','completedOnTime')
+                ->where('status','!=','deleted')
                 ->where('status','!=','completedAfterDeadline')
                 ->get()
                 ->count();
@@ -291,9 +300,15 @@ class JobController extends Controller
         ], 200);
     }
     public function getMonthlyValues(Request $request){
-        $string = auth()->user()->id;
+        if (($request->input('id')=='undefined')||($request->input('id')==NULL)||$request->input('id')=='null'){
+            $string = auth()->user()->id;
+            
+        }
+        else{
+            $string = $request->input('id');
+        }
         $date = Carbon::now();
-        $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        // $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         $completedOnTime=[];
         $completedAfterDeadline=[];
         $overdue=[];
@@ -322,6 +337,7 @@ class JobController extends Controller
             ->where('duedate','<',date('Y-m-d H:i:s'))
             ->where('status','!=','completedOnTime')
             ->where('status','!=','completedAfterDeadline')
+            ->where('status','!=','deleted')
             ->get()
             ->count();
             array_push($overdue,$temp);
