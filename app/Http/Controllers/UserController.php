@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 use  App\Models\ForgotPassword;
-
+use validator;
 class UserController extends Controller
 {
 
@@ -66,10 +66,14 @@ class UserController extends Controller
         // return response()->json(['string'=>'success'],200);
         $admin = auth()->user();
         if ($admin->role == 'admin'){
-            $this->validate($request, [
+            $validator = Validator::make($request->all(), [
                 'name' => 'required|string',
-                'email' => 'required|email|unique:users',
+                'email' => 'required|email|unique:users'
             ]);
+            if ($validator->fails()) {
+                return response()->json(['message'=>'Email already exists'], 400);
+              
+              }
             $user = new User;
             $user->name = $request->input('name');
             $user->email = $request->input('email');
@@ -155,5 +159,8 @@ class UserController extends Controller
             return response()->json(['user' => $user, 'message' => 'Updated user!'], 201);
         }
         return response()->json(['message'=>'Not authorised']);
+    }
+    public function getUser(){
+        return auth()->user();
     }
 }

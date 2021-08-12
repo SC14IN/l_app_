@@ -159,94 +159,84 @@ class JobController extends Controller
             
         }
         else{
-            //creator
-            $jobCreator = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName')
-                ->where('creator', $user->id)
+            //change 
+            $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName')
+                
+                ->where(function ($query) use($user) {
+                    $query->where('creator', $user->id)
+                            ->orWhere('assignee', $user->id);
+                })
                 ->orderBy('duedate','asc')
                 ->where('status','!=', 'deleted')
                 ->get();
-            $jobAssignee = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName')
-                ->where('assignee', $user->id)
-                ->orderBy('duedate','asc')
-                ->where('status','!=', 'deleted')
-                ->get();
-            return response()->json([$jobCreator,$jobAssignee]);
+           
+                
+            return response()->json($jobs);
         }
     }
     public function filterJobs(Request $request){//edit
-        $admin = auth()->user();
-        $column = $request->input('column');
-        // global $string;
-        $string = $request->input('string');
-        if ($admin->role == 'admin'){
-            if ($column=='title'||$column=='description'){                
-                $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName',)
-                    ->where(function ($query){
+        $user = auth()->user();
+         
+        $jobs = Job::where(function ($query) {
                         $query->where('status', NULL)
-                                ->orWhere('status','!=','deleted');
+                            ->orWhere('status','!=','deleted');
                     })
+                    // ->where(function ($query) use($user) {
+                    //     $query->where('creator', $user->id)
+                    //             ->orWhere('assignee', $user->id);
+                    // })
                     ->orderBy('duedate','asc')
-                    ->where(function ($query)  use($string) {
-                        // global $string;
-                        $query->where('title', 'LIKE', '%'.$string.'%')
-                                ->orWhere('description', 'LIKE', '%'.$string.'%');
-                })
-                ->get();
-                return $jobs;
-            }
-            if ($column == 'assigner'){
-                $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName',)
-                ->where('creator', $string )
-                ->where(function ($query) {
+                    ->get();
+
+        $string = $request->input('search');
+        if ($string){                
+            $jobs = Job::
+                where(function ($query){
                     $query->where('status', NULL)
                             ->orWhere('status','!=','deleted');
                 })
                 ->orderBy('duedate','asc')
-                ->get();
-                return $jobs;
-            }
-            if ($column == 'assignee'){
-                $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName',)
-                ->where('assignee', $string)
-                ->where(function ($query) {
-                    $query->where('status', NULL)
-                            ->orWhere('status','!=','deleted');
-                })
-                ->orderBy('duedate','asc')
-                ->get();
-                return $jobs;
-            }
-            if($column=='status'){//when 
-                if($string == 'all'){
-                    return $jobs;
-                }
-                else if($string == 'inprogress'){
-                    $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName',)
-                    ->where('status', 'inprogress')
-                    ->orderBy('duedate','asc')
-                    ->get();
-                    return $jobs;
-                }
-                else if($string == 'completed'){
-                    $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName',)
-                    ->where('status', 'completed')
-                    ->orderBy('duedate','asc')
-                    ->get();
-                    return $jobs;
-                }
-                else if($string == 'overdue'){
-                    $jobs = Job::select('id','title','description','assignee','creator','duedate','status','assignerName','assigneeName',)
-                    ->where('duedate','<',date('Y-m-d H:i:s'))
-                    ->where('status','!=', 'deleted')
-                    ->orderBy('duedate','asc')
-                    ->get();
-                    return $jobs;
-                }
+                ->where(function ($query)  use($string) {
+                    $query->where('title', 'LIKE', '%'.$string.'%')
+                            ->orWhere('description', 'LIKE', '%'.$string.'%');
+            })
+            ->get();
+        }
+        if($request->input('assignee')){
+            if($request->input('assignee')!='All'){
+                $jobs = $jobs->where('assignee', $request->input('assignee'));
             }
         }
-        else{
-            return response()->json(['message'=>'Not allowed']);
+        if($request->input('creator')){
+            if($request->input('creator')!='All'){
+                $jobs = $jobs->where('creator', $request->input('creator'));
+            }
         }
+        if($request->input('status')){
+            if($request->input('status')=='Overdue'){
+                $jobs = $jobs->where('duedate','<',date('Y-m-d H:i:s'))
+                                ->where('status','!=','completedOnTime')
+                                ->where('status','!=','completedAfterDeadline');
+            }
+            if($request->input('status')=='Inprogress'){
+                $jobs = $jobs->where('status','inprogress');
+            }
+            if($request->input('status')=='CompletedOnTime'){
+                $jobs = $jobs->where('status','completedOnTime');
+            }
+            if($request->input('status')=='CompletedAfterDeadline'){
+                $jobs = $jobs->where('status','completedAfterDeadline');
+            }
+        }
+        // if($request->input('interval')){
+
+        // }
+        $ans = [];
+        foreach($jobs as $job){
+            array_push($ans,$job);
+        }
+        
+        return $ans;
     }
     public function getValues(Request $request){//only admin can see overview
         

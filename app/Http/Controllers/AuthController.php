@@ -6,6 +6,7 @@ use  App\Models\User;
 use  App\Models\VerifyUser;
 use  App\Models\ForgotPassword;
 
+use Validator;
 use App\Mail\TestEmail;
 use App\Mail\VerifyEmail;
 use Illuminate\Support\Facades\Mail;
@@ -15,18 +16,21 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {
     
-    public function register(Request $request){
-        //validate incoming request 
-        //if email already registered and not verified, register again and give new token for
-        $this->validate($request, [
+    public function register(Request $request){//unverified user registration
+        // validate incoming request 
+        // if email already registered and not verified, register again and give new token for
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'email' => 'required|email|unique:users',
             'password' => 'required
-                        |min:6
+                        |min:8
                         |regex:/^.*(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[~!@#$%^&*]).*$/
                         |confirmed',
         ]);
-
+        if ($validator->fails()) {
+            return response()->json(['message'=>'Email already registered or Password is weak'], 400);
+          
+          }
         $user = new User;
         $user->name = $request->input('name');
         $user->email = $request->input('email');
@@ -100,7 +104,7 @@ class AuthController extends Controller
         $user = User::where('email',$credentials['email'])->first();
         
         if(!$user){
-            return response()->json(['message'=>'Email not registered']);
+            return response()->json(['message'=>'Email not registered'],401);
         }
         if($user->deleted){
             return response()->json(['message' => 'Account deleted by '.($user->deletedBy)], 401);

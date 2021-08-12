@@ -30,11 +30,11 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 });
 $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($router) {
     $router->get('listUsers', 'UserController@listUsers');
-    $router->get('delSelf', 'UserController@delSelf');
+    $router->delete('delSelf', 'UserController@delSelf');
     $router->delete('delUser', 'UserController@delUser');
     $router->post('createUser', 'UserController@createUser');
     $router->get('createUser', 'UserController@createUser');
-
+    
     $router->post('filter', 'UserController@filter');
     $router->get('filter', 'UserController@filter');
     $router->post('createUser', 'UserController@createUser');
@@ -50,5 +50,6 @@ $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($route
 
     $router->get('getValues', 'JobController@getValues');
     $router->get('getMonthlyValues', 'JobController@getMonthlyValues');
-
+    $router->get('getUser', 'UserController@getUser');
+    
 });
