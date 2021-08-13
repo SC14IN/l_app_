@@ -59,14 +59,21 @@ class AuthController extends Controller
     }
     public function emailVerify(Request $request){
         $token = $request->input('token');
-        $verify = VerifyUser::where('token',$token)->first();
+        $verify = VerifyUser::where('token',$token)->first();//alreadyverified
         if($verify){
             $user = User::find($verify->user_id);//if deleted
             $user->verified = true;
             $user->save();
-            return response()->json(['message'=>'User verified successfully']);
+            try{
+                $data = ['name' => $user->name,'token'=>'Welcome message'];
+                Mail::to($user->email)->send(new TestEmail($data));
+            }
+            catch(\Exception $e){
+                return response()->json(['message'=>'Mail not sent']);
+            }
+            return response()->json(['message'=>'User verified successfully'],200);
         }
-        return response()->json(['message'=>'Token invalid or expired']);
+        return response()->json(['message'=>'Token invalid or expired'],404);
 
     }
     public function login(Request $request){

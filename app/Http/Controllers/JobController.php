@@ -8,6 +8,9 @@ use  App\Models\User;
 
 use App\Mail\TestEmail;
 use App\Mail\VerifyEmail;
+use App\Mail\WelcomeEmail;
+use App\Mail\TaskAssignmentEmail;
+use App\Mail\StatusUpdateEmail;
 use Illuminate\Support\Facades\Mail;
 
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +33,9 @@ class JobController extends Controller
         $job->duedate = $request->input('duedate');//findout how to give dateTime type
         $job->assignee = $request->input('assignee');//update status if there is assignee
         // $job->status = NULL;
-        if($request->input('assignee')){
+        $job->creator = $creator->id;
+        $job->assignerName = $creator->email;
+        if($request->input('assignee')){//task assigned mail
             $id = $request->input('assignee');
             $user = User::where('id',$id)->first();
             if(!$user){
@@ -42,13 +47,25 @@ class JobController extends Controller
             if($user->deleted){
                 return response()->json(['message'=> 'Assignee deleted by '.($user->deletedBy)]);
             }
-            $job->status = 'assigned';
             $job->assigneeName = $user->email;
+            $job->status = 'assigned';
+            try{
+                $data = ['name' => $user->name,'token'=>$job];
+                Mail::to($user->email)->send(new TaskAssignmentEmail($data));
+            }
+            catch(\Exception $e){
+                return response()->json(['message'=>'Mail not sent']);
+            }
         }
-        $job->creator = $creator->id;
-        $job->assignerName = $creator->email;
+        
         $job->save();
-
+        try{
+            $data = ['name' => $user->name,'token'=>$job];
+            Mail::to($job->assignerName)->send(new TaskAssignmentEmail($data)); 
+        }
+        catch(\Exception $e){
+            return response()->json(['message'=>'Mail not sent']);
+        }
         // get mail id of assignee if exists and send mail 
         return response()->json(['job'=> $job]);
     }
@@ -74,7 +91,9 @@ class JobController extends Controller
         if ($request->input('duedate')){
             $job->duedate = $request->input('duedate');
         }
-        if ($request->input('assignee')){
+        $job->creator = $creator->id;
+
+        if ($request->input('assignee')){//task assigned mail to assignee and assigner? 
 
             $id = $request->input('assignee');
             $user = User::where('id',$id)->first();
@@ -90,16 +109,27 @@ class JobController extends Controller
         
             $job->assignee = $request->input('assignee');///////////update status
             $job->assigneeName = $user->email;
+            try{
+                $data = ['name' => $user->name,'token'=>$job];
+                Mail::to($user->email)->send(new TaskAssignmentEmail($data));
+            }
+            catch(\Exception $e){
+                return response()->json(['message'=>'Mail not sent']);
+            }
             $job->status = 'assigned';
         }
-        if ($request->input('status')){///should i make another assign job function
-            $job->status = $request->input('status');
-        }
-        //findout how to give dateTime type
-        //update status if there is assignee
-        $job->creator = $creator->id;
+        // if ($request->input('status')){///should i make another assign job function
+        //     $job->status = $request->input('status');
+        // }
         $job->save();
         // get mail id of assignee if exists and send mail 
+        try{
+            $data = ['name' => $user->name,'token'=>$job];
+            Mail::to($job->assignerName)->send(new TaskAssignmentEmail($data)); 
+        }
+        catch(\Exception $e){
+            return response()->json(['message'=>'Mail not sent']);
+        }
         return response()->json(['message'=> $job]);
     }
     public function updateStatus(Request $request){
@@ -114,10 +144,10 @@ class JobController extends Controller
         if($job->assignee != $assignee->id){//only assignee can update status
             return response()->json(['message'=>'Not authorised to delete']);
         }
-        if ($request->input('status') == 'inprogress'){
+        if ($request->input('status') == 'inprogress'){//status update mail
             $job->status = 'inprogress';
         }
-        if ($request->input('status') == 'completed'){
+        if ($request->input('status') == 'completed'){//status update mail
             if($job->duedate < date('Y-m-d H:i:s')){
                 $job->status = 'completedAfterDeadline';
             }
@@ -127,6 +157,15 @@ class JobController extends Controller
             
         }
         $job->save();
+        try{
+            $data = ['token'=>$job];
+            Mail::to($assignee->email)->send(new StatusUpdateEmail($data));
+            Mail::to($job->assignerName)->send(new StatusUpdateEmail($data));
+        }
+        catch(\Exception $e){
+            return response()->json(['message'=>'Mail not sent']);
+        }
+        
         return response()->json(['message'=> 'Status updated','job'=> $job]);
     }
     public function deleteJob(Request $request){
@@ -142,8 +181,18 @@ class JobController extends Controller
         if($job->creator != $creator->id){//only assigner can delete
             return response()->json(['message'=>'Not authorised to delete']);
         }
-        $job->status = 'deleted';///add softdelete
+        $job->status = 'deleted';///add softdelete  //status updated
         $job->save();
+        try{
+            $data = ['token'=>$job];
+            if($job->assigneeName){
+                Mail::to($job->assigneeName)->send(new StatusUpdateEmail($data));
+            }
+            Mail::to($job->assignerName)->send(new StatusUpdateEmail($data));
+        }
+        catch(\Exception $e){
+            return response()->json(['message'=>'Mail not sent']);
+        }
         return response()->json(['message'=>'Successfully deleted task']);
     }
     public function viewJobs(Request $request){
@@ -181,10 +230,10 @@ class JobController extends Controller
                         $query->where('status', NULL)
                             ->orWhere('status','!=','deleted');
                     })
-                    // ->where(function ($query) use($user) {
-                    //     $query->where('creator', $user->id)
-                    //             ->orWhere('assignee', $user->id);
-                    // })
+                    ->where(function ($query) use($user) {
+                        $query->where('creator', $user->id)
+                                ->orWhere('assignee', $user->id);
+                    })
                     ->orderBy('duedate','asc')
                     ->get();
 
@@ -298,7 +347,6 @@ class JobController extends Controller
             $string = $request->input('id');
         }
         $date = Carbon::now();
-        // $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         $completedOnTime=[];
         $completedAfterDeadline=[];
         $overdue=[];
