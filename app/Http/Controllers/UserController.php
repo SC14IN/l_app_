@@ -18,6 +18,9 @@ class UserController extends Controller
 
     public function listUsers(Request $request){
         $user = auth()->user();
+        if(!$user){
+            return response()->json(['message'=>'Unauthorised'],401);
+        }
         // return response()->json(['user' => $user]);
         if ($user->role == 'admin'){
             $users = User::select('id','name','email','role')
@@ -103,10 +106,11 @@ class UserController extends Controller
     }
 /////what to do if we want to re create a deleted account
 /////can i delete the prevoius account from db
-
     public function filter(Request $request){//edit
         $admin = auth()->user();
-        
+        if(!$admin){
+            return response()->json(['message'=>'Unauthorised'],401);
+        }
         global $string ;
         $string= $request->input('string');
         // echo($string);

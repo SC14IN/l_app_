@@ -11,6 +11,8 @@ use App\Mail\VerifyEmail;
 use App\Mail\WelcomeEmail;
 use App\Mail\TaskAssignmentEmail;
 use App\Mail\StatusUpdateEmail;
+use App\Mail\DailyTaskEmail;
+
 use Illuminate\Support\Facades\Mail;
 
 use Illuminate\Support\Facades\Auth;
@@ -18,8 +20,6 @@ use Illuminate\Support\Facades\DB;
 
 use  App\Models\Job;
 
-// use  App\Models\Status;
-//how to show status
 class JobController extends Controller
 {
     public function createJob(Request $request){
@@ -386,5 +386,37 @@ class JobController extends Controller
             'completedOnTime' => $completedOnTime,
             'completedAfterDeadline' => $completedAfterDeadline,
         ], 200);
+    }
+    public function jobs($id){//mail all the assignes about their assigned and onprogress tasks
+        $user = User::where('id',$id)->first();
+        $jobs = Job::select('id')
+        ->where('assignee', $user->id)
+        ->where(function ($query) {
+            $query->where('status', 'assigned')
+                ->orWhere('status','inprogress');
+        })
+        ->orderBy('duedate','asc')
+        ->get();
+
+        return $jobs;
+    }
+    public function dailyEmailData(){
+        $users = User::select('id','name','email','role')
+        // ->where('role', 'normal')
+        ->where('verified', true)
+        ->where('deleted', false)
+        ->get();
+
+        foreach($users as $user){
+            $jobs = $this->jobs($user->id);
+            $email = $user->email;
+            echo ($email);
+            try{
+                $data = ['token'=>$jobs];
+                Mail::to($email)->send(new DailyTaskEmail($data));
+            }
+            catch(\Exception $e){
+            }
+        }
     }
 }

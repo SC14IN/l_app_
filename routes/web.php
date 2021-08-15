@@ -51,5 +51,6 @@ $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($route
     $router->get('getValues', 'JobController@getValues');
     $router->get('getMonthlyValues', 'JobController@getMonthlyValues');
     $router->get('getUser', 'UserController@getUser');
+    $router->get('dailyEmailData', 'JobController@dailyEmailData');
     
 });
