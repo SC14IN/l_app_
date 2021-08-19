@@ -21,7 +21,7 @@ class TestEmail extends Mailable
     public function build()
     {
         $address = 'ch.sathvik@vmock.com';
-        $subject = 'This is a demo!';
+        $subject = 'Verification email!';
         $name = 'sathvik';
 
         

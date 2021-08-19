@@ -22,6 +22,7 @@ class CreateJobsTable extends Migration
             $table->unsignedBigInteger('creator');
             $table->string('status')->nullable();
             $table->timestamps();
+            // $table->index('title');
         });
     }
 

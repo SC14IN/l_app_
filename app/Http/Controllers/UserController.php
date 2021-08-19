@@ -1,5 +1,6 @@
 <?php
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 
 use  App\Models\User;
@@ -13,48 +14,52 @@ use Illuminate\Support\Facades\DB;
 
 use  App\Models\ForgotPassword;
 use validator;
+
 class UserController extends Controller
 {
-
-    public function listUsers(Request $request){
+    public function listUsers(Request $request)
+    {
+        // $this->pusher();
+        // $pusher->trigger('my-channel', 'my_event', 'hello world');
         $user = auth()->user();
-        if(!$user){
-            return response()->json(['message'=>'Unauthorised'],401);
+        if (!$user) {
+            return response()->json(['message'=>'Unauthorised'], 401);
         }
         // return response()->json(['user' => $user]);
-        if ($user->role == 'admin'){
-            $users = User::select('id','name','email','role')
+        if ($user->role == 'admin') {
+            $users = User::select('id', 'name', 'email', 'role')
                 // ->where('role', 'normal')
                 ->where('verified', true)
                 ->where('deleted', false)
                 ->get();
         }
-        if ($user->role == 'normal'){
-            $users = User::select('id','name','email')
+        if ($user->role == 'normal') {
+            $users = User::select('id', 'name', 'email')
                 ->where('role', 'normal')
                 ->where('verified', true)
                 ->where('deleted', false)
                 ->get();
         }
         return response()->json($users);
-
     }
-    public function delSelf(Request $request){
+    public function delSelf(Request $request)
+    {
         $user = auth()->user();
         $user->deleted = true;
         $user->deletedBy = 'self';
         $user->save();
         return response()->json(['message'=>'Successfully deleted yourself']);
     }
-    public function delUser(Request $request){////delete with id
+    public function delUser(Request $request)
+    {////delete with id
         $admin = auth()->user();
-        if ($admin->role == 'admin'){
+        if ($admin->role == 'admin') {
             $this->validate($request, [
                 'id' => 'required',
             ]);
-            $user = User::where('id',$request->input('id'))->first();////already deleted
-            if($user->deleted){
-                return response()->json(['message' => 'Account already deleted by '.($user->deletedBy)], 401);
+            $user = User::where('id', $request->input('id'))->first();////already deleted
+            if ($user->deleted) {
+                return response()->json(['message' => 'Account already deleted by '.($user->deletedBy)], 403);
             }
             $user->deleted = true;
             $user->deletedBy = 'admin';
@@ -65,18 +70,24 @@ class UserController extends Controller
         }
         return response()->json(['message'=>'Not authorised']);
     }
-    public function createUser(Request $request){
+    public function createUser(Request $request)
+    {
         // return response()->json(['string'=>'success'],200);
         $admin = auth()->user();
-        if ($admin->role == 'admin'){
+        if ($admin->role == 'admin') {
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string',
                 'email' => 'required|email|unique:users'
             ]);
             if ($validator->fails()) {
-                return response()->json(['message'=>'Email already exists'], 400);
-              
-              }
+                // if ($messages->has('name')) {
+                //     return response()->json(['message'=> 'Name should be a string'], 400);
+                // }
+                // if ($messages->has('email')) {
+                //     return response()->json(['message'=> 'Email already exists'], 400);
+                // }
+                return response()->json(['message'=> $validator->errors()->first()], 400);
+            }
             $user = new User;
             $user->name = $request->input('name');
             $user->email = $request->input('email');
@@ -91,11 +102,10 @@ class UserController extends Controller
             $forgotpass = ForgotPassword::firstornew(['user_id'=> $user->id]);
             $forgotpass->token = $this->generateToken(16);
             $forgotpass->save();
-            try{
+            try {
                 $data = ['name' => $user->name,'token'=>$forgotpass->token];
                 Mail::to($user->email)->send(new TestEmail($data));
-            }
-            catch(\Exception $e){
+            } catch (\Exception $e) {
                 return response()->json(['message'=>'Mail not sent']);
             }
             
@@ -104,18 +114,20 @@ class UserController extends Controller
         }
         return response()->json(['message'=>'Not authorised']);
     }
-/////what to do if we want to re create a deleted account
+    /////what to do if we want to re create a deleted account
 /////can i delete the prevoius account from db
-    public function filter(Request $request){//edit
+    public function filter(Request $request)
+    {//edit
         $admin = auth()->user();
-        if(!$admin){
-            return response()->json(['message'=>'Unauthorised'],401);
+        if (!$admin) {
+            return response()->json(['message'=>'Unauthorised'], 401);
         }
         global $string ;
         $string= $request->input('string');
         // echo($string);
-        if ($admin->role == 'admin'){
-            $users = User::select('id','name','email','role')
+            
+            
+        $users = User::select('id', 'name', 'email', 'role')
                 ->where('verified', true)
                 ->where('deleted', false)
                 ->where(function ($query) {
@@ -124,39 +136,37 @@ class UserController extends Controller
                             ->orWhere('email', 'LIKE', '%'.$string.'%');
                 })
                 ->get();
-                // $users = User::select('id','name','email','role')
-                // ->where('name', 'LIKE', '%'.$string.'%')
-                // ->where('email', 'LIKE', '%'.$string.'%')
-                // ->where('verified', true)
-                // ->where('deleted', false)
+        // $users = User::select('id','name','email','role')
+        // ->where('name', 'LIKE', '%'.$string.'%')
+        // ->where('email', 'LIKE', '%'.$string.'%')
+        // ->where('verified', true)
+        // ->where('deleted', false)
                 
-            return $users;
-        }
-        else{
-            return response()->json(['message'=>'Not allowed']);
-        }
+        return $users;
     }
 
-    public function update(request $request){
+    public function update(request $request)
+    {
         $admin = auth()->user();
-        if ($admin->role == 'admin'){
+        if ($admin->role == 'admin') {
             $this->validate($request, [
                 'id' => 'required'
             ]);
-            $user = User::where('id',$request->input('id'))->first();
+            $user = User::where('id', $request->input('id'))->first();
 
-            if ($request->input('name')){
+            if ($request->input('name')) {
                 $user->name = $request->input('name');
             }
-            if ($request->input('email')){
+            if ($request->input('email')) {
                 $user->name = $request->input('email');
             }
-            if ($request->input('verified')!== NULL){
+            if ($request->input('verified')!== null) {
                 $user->verified = $request->input('verified');
-            }if ($request->input('deleted')!== NULL){
+            }
+            if ($request->input('deleted')!== null) {
                 $user->deleted = $request->input('deleted');
             }
-            if ($request->input('role')){
+            if ($request->input('role')) {
                 $user->role = $request->input('role');
             }
             $user->save();
@@ -164,7 +174,8 @@ class UserController extends Controller
         }
         return response()->json(['message'=>'Not authorised']);
     }
-    public function getUser(){
+    public function getUser()
+    {
         return auth()->user();
     }
 }

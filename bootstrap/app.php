@@ -18,7 +18,6 @@ date_default_timezone_set(env('APP_TIMEZONE', 'Asia/Kolkata'));
 | application as an "IoC" container and router for this framework.
 |
 */
-
 $app = new Laravel\Lumen\Application(
     dirname(__DIR__)
 );

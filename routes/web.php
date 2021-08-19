@@ -19,13 +19,14 @@ $router->get('/', function () use ($router) {
 $router->group(['prefix' => 'api'], function () use ($router) {
     // Matches "/api/register
     $router->post('register', 'AuthController@register');
+    $router->post('email', 'AuthController@checkEmail');
     $router->post('login', 'AuthController@login');
     // $router->post('logout', 'AuthController@logout');
-    $router->post('emailVerify', 'AuthController@emailVerify');
+    $router->post('emailverify', 'AuthController@emailVerify');
     // $router->post('sendEmail', 'MailController@sendEmail');
     $router->post('forgotPassword', 'AuthController@forgotPassword');
     $router->post('resetPassword', 'AuthController@resetPassword');
-    $router->get('test', 'AuthController@test');
+    // $router->get('test', 'AuthController@test');
     // $router->get('listUsers', 'UserController@listUsers');
 });
 $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($router) {
@@ -34,6 +35,15 @@ $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($route
     $router->delete('delUser', 'UserController@delUser');
     $router->post('createUser', 'UserController@createUser');
     $router->get('createUser', 'UserController@createUser');
+
+    //  // CRUD routes for user
+    // $router->group(['prefix' => 'users','middleware'=>'auth'], function () use ($router) {
+    //     $router->post('', 'UserController@create');
+    //     $router->get('', 'UserController@list');
+    //     $router->delete('{userId}', 'UserController@delete');
+    //     $router->get('{userId}', 'UserController@getById');
+    // });
+
     
     $router->post('filter', 'UserController@filter');
     $router->get('filter', 'UserController@filter');
@@ -43,7 +53,7 @@ $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($route
     $router->put('updateJob', 'JobController@updateJob');
     $router->put('updateStatus', 'JobController@updateStatus');
     $router->get('viewJobs', 'JobController@viewJobs');
-    $router->delete('deleteJob','JobController@deleteJob');
+    $router->delete('deleteJob', 'JobController@deleteJob');
 
     $router->post('filterJobs', 'JobController@filterJobs');
     $router->get('filterJobs', 'JobController@filterJobs');
@@ -52,5 +62,4 @@ $router->group(['prefix' => 'api','middleware'=>'auth'], function () use ($route
     $router->get('getMonthlyValues', 'JobController@getMonthlyValues');
     $router->get('getUser', 'UserController@getUser');
     $router->get('dailyEmailData', 'JobController@dailyEmailData');
-    
 });
